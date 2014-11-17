@@ -131,4 +131,39 @@ public class ULTMTest {
         executor.awaitTermination(3, SECONDS);
         txManager.tx(() -> assertThat(jooq().selectCount().from(PERSONS).fetchOne().value1(), is(500)));
     }
+
+    @Test
+    public void should_allow_noop() {
+        txManager.begin();
+        // noop
+        txManager.commit();
+
+        txManager.begin();
+        // noop
+        txManager.rollback();
+    }
+
+    @Test
+    public void should_not_allow_begin_within_transaction() {
+        try {
+            txManager.begin();
+            txManager.begin();
+        } catch (IllegalStateException ex) {
+            assertThat(ex.getMessage(), is("Transaction is in progress already."));
+        }
+    }
+
+    @Test
+    public void should_not_allow_end_or_rollback_without_transaction() {
+        try {
+            txManager.commit();
+        } catch (IllegalStateException ex) {
+            assertThat("commit", ex.getMessage(), is("Transaction is not active."));
+        }
+        try {
+            txManager.rollback();
+        } catch (IllegalStateException ex) {
+            assertThat("rollback", ex.getMessage(), is("Transaction is not active."));
+        }
+    }
 }
