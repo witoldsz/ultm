@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>core</groupId>
+  <groupId>com.github.witoldsz</groupId>
   <artifactId>ultm</artifactId>
   <version>1.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
+  <name>ULTM</name>
+  <description>Ultra Lightweight Transaction Manager for JDBC</description>
   <url>https://github.com/witoldsz/ultm</url>
   <licenses>
     <license>
@@ -13,6 +15,26 @@
       <url>http://opensource.org/licenses/Apache-2.0</url>
     </license>
   </licenses>
+
+  <developers>
+    <developer>
+      <name>Witold Szczerba</name>
+      <email>pljosh.mail@gmail.com</email>
+      <url>https://github.com/witoldsz</url>
+    </developer>
+  </developers>
+
+  <scm>
+    <url>git@github.com:witoldsz/ultm.git</url>
+    <connection>scm:git:git@github.com:witoldsz/ultm.git</connection>
+    <developerConnection>scm:git:git@github.com:witoldsz/ultm.git</developerConnection>
+  </scm>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+  </properties>
 
   <dependencies>
     <!--  the only dependencies are for tests  -->
@@ -35,9 +57,5 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>1.8</maven.compiler.source>
-    <maven.compiler.target>1.8</maven.compiler.target>
-  </properties>
+
 </project>
