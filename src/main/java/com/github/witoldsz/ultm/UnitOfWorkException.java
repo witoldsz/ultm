@@ -1,4 +1,4 @@
-package ultm.core;
+package com.github.witoldsz.ultm;
 
 /**
  *

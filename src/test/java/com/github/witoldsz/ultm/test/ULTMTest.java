@@ -1,5 +1,8 @@
-package ultm.core;
+package com.github.witoldsz.ultm.test;
 
+import com.github.witoldsz.ultm.UnitOfWorkException;
+import com.github.witoldsz.ultm.TxManager;
+import com.github.witoldsz.ultm.ULTM;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Random;

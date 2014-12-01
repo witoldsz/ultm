@@ -1,4 +1,4 @@
-package ultm.core.spi;
+package com.github.witoldsz.ultm.internal;
 
 import java.sql.Array;
 import java.sql.Blob;

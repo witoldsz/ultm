@@ -1,9 +1,9 @@
-package ultm.core;
+package com.github.witoldsz.ultm;
 
 import java.sql.Connection;
 import java.util.function.Consumer;
-import ultm.core.spi.ManagedDataSource;
-import ultm.core.spi.ThreadLocalTxManager;
+import com.github.witoldsz.ultm.internal.ManagedDataSource;
+import com.github.witoldsz.ultm.internal.ThreadLocalTxManager;
 import javax.sql.DataSource;
 
 /**

@@ -1,14 +1,14 @@
-package ultm.core.spi;
+package com.github.witoldsz.ultm.internal;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Optional;
 import java.util.function.Consumer;
 import javax.sql.DataSource;
-import ultm.core.TxManager;
-import ultm.core.UnitOfWork;
-import ultm.core.UnitOfWorkChecked;
-import ultm.core.UnitOfWorkException;
+import com.github.witoldsz.ultm.TxManager;
+import com.github.witoldsz.ultm.UnitOfWork;
+import com.github.witoldsz.ultm.UnitOfWorkChecked;
+import com.github.witoldsz.ultm.UnitOfWorkException;
 
 /**
  *

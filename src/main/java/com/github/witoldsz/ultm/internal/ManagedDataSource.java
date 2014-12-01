@@ -1,4 +1,4 @@
-package ultm.core.spi;
+package com.github.witoldsz.ultm.internal;
 
 import java.io.PrintWriter;
 import java.sql.Connection;
