@@ -61,7 +61,7 @@
 
   <distributionManagement>
     <repository>
-      <id>bintray-ultm</id>
+      <id>bintray-witoldsz-maven-ultm</id>
       <name>witoldsz-maven-ultm</name>
       <url>https://api.bintray.com/maven/witoldsz/maven/ultm</url>
     </repository>
