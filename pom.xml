@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.github.witoldsz</groupId>
   <artifactId>ultm</artifactId>
-  <version>1.0</version>
+  <version>1.1-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>ULTM</name>
@@ -28,7 +28,7 @@
     <url>git@github.com:witoldsz/ultm.git</url>
     <connection>scm:git:git@github.com:witoldsz/ultm.git</connection>
     <developerConnection>scm:git:git@github.com:witoldsz/ultm.git</developerConnection>
-    <tag>ultm-1.0</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <properties>
