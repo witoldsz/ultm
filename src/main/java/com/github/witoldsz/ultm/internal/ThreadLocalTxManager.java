@@ -16,7 +16,7 @@ import com.github.witoldsz.ultm.UnitOfWorkException;
  */
 public class ThreadLocalTxManager implements TxManager, ConnectionProvider {
 
-    private static final WrappedConnection PHANTOM_CONNECTON = new WrappedConnection(null);
+    private static final WrappedConnection TRANSACTION_MARKER = new WrappedConnection(null);
 
     private final ThreadLocal<WrappedConnection> connections = new ThreadLocal<>();
     private final DataSource rawDataSource;
@@ -30,9 +30,13 @@ public class ThreadLocalTxManager implements TxManager, ConnectionProvider {
     @Override
     public WrappedConnection get() throws SQLException {
         WrappedConnection c = connections.get();
-        if (c == null || c == PHANTOM_CONNECTON) {
-            connections.set(c = new WrappedConnection(rawDataSource.getConnection()));
-            if (c.getAutoCommit()) c.setAutoCommit(false);
+        if (c == null) {
+            throw new IllegalStateException("Transaction is not active.");
+        }
+        if (c == TRANSACTION_MARKER) {
+            Connection rawConnection = rawDataSource.getConnection();
+            connections.set(c = new WrappedConnection(rawConnection));
+            if (c.getAutoCommit()) c.setAutoCommit(false); // just to make sure
             connectionTuner.accept(c);
         }
         return c;
@@ -66,7 +70,7 @@ public class ThreadLocalTxManager implements TxManager, ConnectionProvider {
     @Override
     public void begin() {
         throwIfAlreadyAssigned();
-        connections.set(PHANTOM_CONNECTON);
+        connections.set(TRANSACTION_MARKER);
     }
 
     @Override
@@ -97,10 +101,9 @@ public class ThreadLocalTxManager implements TxManager, ConnectionProvider {
         WrappedConnection c = connections.get();
         if (c == null) {
             throw new IllegalStateException("Transaction is not active.");
-        } else {
-            connections.remove();
         }
-        return c == PHANTOM_CONNECTON ? Optional.empty() : Optional.of(c.getDelegate());
+        connections.remove();
+        return c == TRANSACTION_MARKER ? Optional.empty() : Optional.of(c.getDelegate());
     }
 
     private void throwIfAlreadyAssigned() {

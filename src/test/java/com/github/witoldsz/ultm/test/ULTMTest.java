@@ -146,27 +146,44 @@ public class ULTMTest {
         txManager.rollback();
     }
 
-    @Test
+    @Test(expected = IllegalStateException.class)
     public void should_not_allow_begin_within_transaction() {
         try {
             txManager.begin();
             txManager.begin();
         } catch (IllegalStateException ex) {
             assertThat(ex.getMessage(), is("Transaction is in progress already."));
+            throw ex;
         }
     }
 
-    @Test
-    public void should_not_allow_end_or_rollback_without_transaction() {
+    @Test(expected = IllegalStateException.class)
+    public void should_not_allow_commit_without_transaction() {
         try {
             txManager.commit();
         } catch (IllegalStateException ex) {
             assertThat("commit", ex.getMessage(), is("Transaction is not active."));
+            throw ex;
         }
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void should_not_allow_rollback_without_transaction() {
         try {
             txManager.rollback();
         } catch (IllegalStateException ex) {
             assertThat("rollback", ex.getMessage(), is("Transaction is not active."));
+            throw ex;
+        }
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void should_throw_when_acting_without_transaction() {
+        try {
+            jooq().selectFrom(PERSONS).fetchOne();
+        } catch (IllegalStateException ex) {
+            assertThat(ex.getMessage(), is("Transaction is not active."));
+            throw ex;
         }
     }
 }
