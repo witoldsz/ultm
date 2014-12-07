@@ -8,9 +8,9 @@ Simple is beautiful.
 
 Brief:
 ---
-ULTM gives you basic transaction API for a JDBC data source. All you have to do is to prepare a `DataSource`, pass it to this library and in exchange it gives you `TxManager` (to control transactions) and a dedicated, *managed* `DataSource` you should use to fetch connections.
+ULTM gives you basic transaction API for a JDBC data source. All you have to do is prepare a `DataSource` and pass it to this library in exchange for `TxManager` (to control transactions) and a dedicated, *managed* `DataSource` you should use to fetch connections.
 
-ULTM works with with JDBC libraries. All you have to do is to pass the ULTM managed DataSource to them and you are done. Just remember that you should never mix transaction management from different libs. Try commiting or rolling back on connections from ULTM DataSource and you will get `UnsupportedOperationException`.
+ULTM works with JDBC libraries. Pass the ULTM managed DataSource to them and you are done. Just remember that you should never mix transaction management from different libs. Try committing or rolling back on connections from ULTM DataSource and you will get `UnsupportedOperationException`.
 
 When to use it?
 ---
