@@ -78,9 +78,10 @@ public class ThreadLocalTxManager implements TxManager, ConnectionProvider {
         pullDelegatedConnection().ifPresent( delegated -> {
             try {
                 delegated.commit();
-                delegated.close();
             } catch (SQLException ex) {
                 throw new UnitOfWorkException(ex);
+            } finally {
+                closeQuietly(delegated);
             }
         });
     }
@@ -90,9 +91,10 @@ public class ThreadLocalTxManager implements TxManager, ConnectionProvider {
         pullDelegatedConnection().ifPresent( delegated -> {
             try {
                 delegated.rollback();
-                delegated.close();
             } catch (SQLException ex) {
                 throw new UnitOfWorkException(ex);
+            } finally {
+                closeQuietly(delegated);
             }
         });
     }
@@ -109,6 +111,14 @@ public class ThreadLocalTxManager implements TxManager, ConnectionProvider {
     private void throwIfAlreadyAssigned() {
         if (connections.get() != null) {
             throw new IllegalStateException("Transaction is in progress already.");
+        }
+    }
+
+    private void closeQuietly(Connection c) {
+        try {
+            c.close();
+        } catch (SQLException ex) {
+            // ignore quietly
         }
     }
 
