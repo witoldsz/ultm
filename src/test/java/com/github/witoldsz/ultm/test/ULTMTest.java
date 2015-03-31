@@ -9,13 +9,9 @@ import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import javax.sql.DataSource;
 import org.h2.jdbcx.JdbcDataSource;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Record;
@@ -40,26 +36,19 @@ public class ULTMTest {
 
     private TxManager txManager;
     private JdbcDataSource h2DataSource;
-    private DataSource managedDataSource;
-
-    private DSLContext jooq() {
-        return DSL.using(managedDataSource, H2);
-    }
+    private DSLContext jooq;
 
     @Before
     public void setup() throws SQLException {
         h2DataSource = new JdbcDataSource();
-        h2DataSource.setURL("jdbc:h2:mem:db1;DB_CLOSE_DELAY=10");
+        h2DataSource.setURL("jdbc:h2:mem:db1;DB_CLOSE_DELAY=-1");
 
         try (Connection conn = h2DataSource.getConnection()) {
             conn.createStatement().execute("create table PERSONS (ID int, NAME varchar);");
         }
-        try (Connection conn = h2DataSource.getConnection()) {
-            conn.createStatement().executeQuery("select * from PERSONS;");
-        }
         ULTM ultm = new ULTM(h2DataSource);
         txManager = ultm.getTxManager();
-        managedDataSource = ultm.getManagedDataSource();
+        jooq = DSL.using(ultm.getManagedDataSource(), H2);
     }
 
     @After
@@ -67,65 +56,64 @@ public class ULTMTest {
         try (Connection conn = h2DataSource.getConnection()) {
             conn.createStatement().execute("SHUTDOWN");
         }
-        try (Connection conn = h2DataSource.getConnection()) {
-            conn.createStatement().executeQuery("SELECT * FROM persons;");
-        } catch (SQLException ex) {
-            assertThat(ex.getMessage(), containsString("Table \"PERSONS\" not found"));
-        }
+    }
+
+    private int insertPerson() {
+        return jooq.insertInto(PERSONS).set(ID, random.nextInt()).set(NAME, "Mr ULTM").execute();
+    }
+
+    private Integer personsCount() {
+        return jooq.selectCount().from(PERSONS).fetchOne(DSL.count());
     }
 
     @Test
     public void should_begin_and_commit() {
         txManager.begin();
-        jooq().insertInto(PERSONS).set(ID, random.nextInt()).set(NAME, "Witold").execute();
-        assertThat(jooq().selectFrom(PERSONS).fetchOne(), notNullValue());
+        insertPerson();
+        assertThat(personsCount(), is(1));
         txManager.commit();
 
         txManager.begin();
-        assertThat(jooq().selectFrom(PERSONS).fetchOne(), notNullValue());
+        assertThat(personsCount(), is(1));
         txManager.commit();
     }
 
     @Test
     public void should_begin_and_rollback() {
         txManager.begin();
-        jooq().insertInto(PERSONS).set(ID, random.nextInt()).set(NAME, "Robert").execute();
-        assertThat(jooq().selectFrom(PERSONS).fetchOne(), notNullValue());
+        insertPerson();
+        assertThat(personsCount(), is(1));
         txManager.rollback();
 
         txManager.begin();
-        assertThat(jooq().selectFrom(PERSONS).fetchOne(), nullValue());
+        assertThat(personsCount(), is(0));
         txManager.commit();
     }
 
     @Test
     public void should_wrap_tx_within_UnitOfWork() throws Exception {
-        txManager.tx(() ->
-            jooq().insertInto(PERSONS).set(ID, random.nextInt()).set(NAME, "Robert").execute()
-        );
-        assertThat(txManager.txResult(() -> jooq().selectFrom(PERSONS).fetchOne()), notNullValue());
+        txManager.tx(this::insertPerson);
+        assertThat(txManager.txResult(this::personsCount), is(1));
     }
 
     @Test
     public void should_rollback_tx_within_UnitOfWork() throws Exception {
         try {
             txManager.tx(() -> {
-                jooq().insertInto(PERSONS).set(ID, random.nextInt()).set(NAME, "Robert").execute();
+                insertPerson();
                 throw new RuntimeException("Something happened!");
             });
             fail("This test should not get here.");
         } catch (RuntimeException e) {
             // ignore
         }
-        assertThat(txManager.txResult(() -> jooq().selectFrom(PERSONS).fetchOne()), nullValue());
+        assertThat(txManager.txResult(this::personsCount), is(0));
     }
 
     @Test
     public void should_wrap_tx_within_UnitOfWorkCall_with_result() throws Exception {
-        Integer result = txManager.txResult(() ->
-            jooq().insertInto(PERSONS).set(ID, random.nextInt()).set(NAME, "Robert").execute()
-        );
-        assertThat(txManager.txResult(() -> jooq().selectFrom(PERSONS).fetchOne()), notNullValue());
+        Integer result = txManager.txResult(this::insertPerson);
+        assertThat(txManager.txResult(this::personsCount), is(1));
         assertThat(result, is(1));
     }
 
@@ -133,21 +121,20 @@ public class ULTMTest {
     public void should_rollback_tx_within_UnitOfWorkCall_with_result() throws Exception {
         try {
             Object ignore = txManager.txResult(() -> {
-                jooq().insertInto(PERSONS).set(ID, random.nextInt()).set(NAME, "Robert").execute();
+                insertPerson();
                 throw new RuntimeException("Something happened!");
             });
             fail("This test should not get here.");
         } catch (RuntimeException e) {
             // noop
         }
-        assertThat(txManager.txResult(() -> jooq().selectFrom(PERSONS).fetchOne()), nullValue());
+        assertThat(txManager.txResult(this::personsCount), is(0));
     }
 
     @Test
     public void should_propagate_every_exceptions_as_is_from_UnitOfWork() {
         try {
             txManager.tx(() -> {
-                jooq().insertInto(PERSONS).set(ID, random.nextInt()).set(NAME, "Robert").execute();
                 throw new Exception("Something bad happened");
             });
             fail("This test should not get here.");
@@ -161,7 +148,6 @@ public class ULTMTest {
     public void should_propagate_every_exceptions_as_is_from_UnitOfWorkCall() {
         try {
             txManager.txResult(() -> {
-                jooq().insertInto(PERSONS).set(ID, random.nextInt()).set(NAME, "Robert").execute();
                 throw new Exception("Something bad happened");
             });
             fail("This test should not get here.");
@@ -203,7 +189,7 @@ public class ULTMTest {
         for (int i = 0; i < 1000; ++i) {
             int id = i;
             executor.submit(() -> txManager.txWrapped(() -> {
-                    jooq().insertInto(PERSONS).set(ID, id).execute();
+                    insertPerson();
                     if (id % 2 == 1) {
                         throw new RuntimeException("Odd have no luck...");
                     }
@@ -212,7 +198,7 @@ public class ULTMTest {
         executor.shutdown();
         executor.awaitTermination(15, SECONDS); //usually few hundred ms should do
 
-        assertThat(txManager.txResult(() -> jooq().selectCount().from(PERSONS).fetchOne().value1()), is(500));
+        assertThat(txManager.txResult(this::personsCount), is(500));
     }
 
     @Test
@@ -262,7 +248,7 @@ public class ULTMTest {
     @Test(expected = IllegalStateException.class)
     public void should_throw_when_acting_without_transaction() {
         try {
-            jooq().selectFrom(PERSONS).fetchOne();
+            insertPerson();
         } catch (IllegalStateException ex) {
             assertThat(ex.getMessage(), is("Transaction is not active."));
             throw ex;
