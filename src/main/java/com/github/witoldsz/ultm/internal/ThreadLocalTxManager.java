@@ -7,7 +7,7 @@ import java.util.function.Consumer;
 import javax.sql.DataSource;
 import com.github.witoldsz.ultm.TxManager;
 import com.github.witoldsz.ultm.UnitOfWork;
-import com.github.witoldsz.ultm.UnitOfWorkChecked;
+import com.github.witoldsz.ultm.UnitOfWorkCall;
 import com.github.witoldsz.ultm.UnitOfWorkException;
 
 /**
@@ -43,28 +43,36 @@ public class ThreadLocalTxManager implements TxManager, ConnectionProvider {
     }
 
     @Override
-    public void txChecked(UnitOfWorkChecked w) throws Exception {
+    public <T> T txResult(UnitOfWorkCall<T> unit) throws Exception {
         begin();
-        boolean beforeCommit = true;
         try {
-            w.run();
-            beforeCommit = false;
+            T result = unit.call();
             commit();
+            return result;
         } catch (Exception e) {
-            if (beforeCommit) rollback();
+            rollback();
             throw e;
         }
     }
 
     @Override
-    public void tx(UnitOfWork w) {
+    public <T> T txWrappedResult(UnitOfWorkCall<T> unit) {
         try {
-            txChecked(() -> w.run());
-        } catch (UnitOfWorkException ex) {
+            return txResult(unit);
+        } catch (RuntimeException ex) {
             throw ex;
         } catch (Exception ex) {
             throw new UnitOfWorkException(ex);
         }
+    }
+
+    @Override
+    public void tx(UnitOfWork unit) throws Exception {
+        txResult(() -> { unit.run(); return null;});
+    }
+
+    public void txWrapped(UnitOfWork unit) {
+        txWrappedResult(() -> {unit.run(); return null;});
     }
 
     @Override

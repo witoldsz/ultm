@@ -5,7 +5,7 @@ package com.github.witoldsz.ultm;
  * @author witoldsz
  */
 @FunctionalInterface
-public interface UnitOfWorkChecked {
+public interface UnitOfWorkCall<T> {
 
-    void run() throws Exception;
+    T call() throws Exception;
 }

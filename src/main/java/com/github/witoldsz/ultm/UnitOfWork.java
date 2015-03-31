@@ -7,5 +7,5 @@ package com.github.witoldsz.ultm;
 @FunctionalInterface
 public interface UnitOfWork {
 
-    void run();
+    void run() throws Exception;
 }

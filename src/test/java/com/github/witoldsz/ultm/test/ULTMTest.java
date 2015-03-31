@@ -1,8 +1,8 @@
 package com.github.witoldsz.ultm.test;
 
-import com.github.witoldsz.ultm.UnitOfWorkException;
 import com.github.witoldsz.ultm.TxManager;
 import com.github.witoldsz.ultm.ULTM;
+import com.github.witoldsz.ultm.UnitOfWorkException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Random;
@@ -12,6 +12,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import javax.sql.DataSource;
 import org.h2.jdbcx.JdbcDataSource;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -74,7 +75,7 @@ public class ULTMTest {
     }
 
     @Test
-    public void one_thread_scenario_begin_commit() {
+    public void should_begin_and_commit() {
         txManager.begin();
         jooq().insertInto(PERSONS).set(ID, random.nextInt()).set(NAME, "Witold").execute();
         assertThat(jooq().selectFrom(PERSONS).fetchOne(), notNullValue());
@@ -86,7 +87,7 @@ public class ULTMTest {
     }
 
     @Test
-    public void one_thread_scenario_begin_rollback() {
+    public void should_begin_and_rollback() {
         txManager.begin();
         jooq().insertInto(PERSONS).set(ID, random.nextInt()).set(NAME, "Robert").execute();
         assertThat(jooq().selectFrom(PERSONS).fetchOne(), notNullValue());
@@ -98,32 +99,110 @@ public class ULTMTest {
     }
 
     @Test
-    public void one_thread_scenario_unit_of_work() {
+    public void should_wrap_tx_within_UnitOfWork() throws Exception {
         txManager.tx(() ->
             jooq().insertInto(PERSONS).set(ID, random.nextInt()).set(NAME, "Robert").execute()
         );
-        txManager.tx(() -> assertThat(jooq().selectFrom(PERSONS).fetchOne(), notNullValue()));
+        assertThat(txManager.txResult(() -> jooq().selectFrom(PERSONS).fetchOne()), notNullValue());
     }
 
     @Test
-    public void one_thread_scenario_unit_of_work_exception() {
+    public void should_rollback_tx_within_UnitOfWork() throws Exception {
         try {
             txManager.tx(() -> {
                 jooq().insertInto(PERSONS).set(ID, random.nextInt()).set(NAME, "Robert").execute();
-                throw new RuntimeException("Something bad happened");
+                throw new RuntimeException("Something happened!");
             });
-        } catch (UnitOfWorkException ex) {
-            assertThat(ex.getCause().getMessage(), is("Something bad happened"));
+            fail("This test should not get here.");
+        } catch (RuntimeException e) {
+            // ignore
         }
-        txManager.tx(() -> assertThat(jooq().selectFrom(PERSONS).fetchOne(), nullValue()));
+        assertThat(txManager.txResult(() -> jooq().selectFrom(PERSONS).fetchOne()), nullValue());
     }
 
     @Test
-    public void many_threads_scenario() throws InterruptedException {
+    public void should_wrap_tx_within_UnitOfWorkCall_with_result() throws Exception {
+        Integer result = txManager.txResult(() ->
+            jooq().insertInto(PERSONS).set(ID, random.nextInt()).set(NAME, "Robert").execute()
+        );
+        assertThat(txManager.txResult(() -> jooq().selectFrom(PERSONS).fetchOne()), notNullValue());
+        assertThat(result, is(1));
+    }
+
+    @Test
+    public void should_rollback_tx_within_UnitOfWorkCall_with_result() throws Exception {
+        try {
+            Object ignore = txManager.txResult(() -> {
+                jooq().insertInto(PERSONS).set(ID, random.nextInt()).set(NAME, "Robert").execute();
+                throw new RuntimeException("Something happened!");
+            });
+            fail("This test should not get here.");
+        } catch (RuntimeException e) {
+            // noop
+        }
+        assertThat(txManager.txResult(() -> jooq().selectFrom(PERSONS).fetchOne()), nullValue());
+    }
+
+    @Test
+    public void should_propagate_every_exceptions_as_is_from_UnitOfWork() {
+        try {
+            txManager.tx(() -> {
+                jooq().insertInto(PERSONS).set(ID, random.nextInt()).set(NAME, "Robert").execute();
+                throw new Exception("Something bad happened");
+            });
+            fail("This test should not get here.");
+        } catch (Exception ex) {
+            assertThat(ex.getClass(), equalTo(Exception.class));
+            assertThat(ex.getMessage(), is("Something bad happened"));
+        }
+    }
+
+    @Test
+    public void should_propagate_every_exceptions_as_is_from_UnitOfWorkCall() {
+        try {
+            txManager.txResult(() -> {
+                jooq().insertInto(PERSONS).set(ID, random.nextInt()).set(NAME, "Robert").execute();
+                throw new Exception("Something bad happened");
+            });
+            fail("This test should not get here.");
+        } catch (Exception ex) {
+            assertThat(ex.getClass(), equalTo(Exception.class));
+            assertThat(ex.getMessage(), is("Something bad happened"));
+        }
+    }
+
+    @Test
+    public void should_wrap_checked_exceptions_from_UnitOfWork() {
+        try {
+            txManager.txWrapped(() -> {
+                throw new Exception("Something bad happened");
+            });
+            fail("This test should not get here.");
+        } catch (Exception ex) {
+            assertThat(ex.getClass(), equalTo(UnitOfWorkException.class));
+            assertThat(ex.getCause().getMessage(), is("Something bad happened"));
+        }
+    }
+
+    @Test
+    public void should_wrap_checked_exceptions_from_UnitOfWorkCall() {
+        try {
+            txManager.txWrappedResult(() -> {
+                throw new Exception("Something bad happened");
+            });
+            fail("This test should not get here.");
+        } catch (Exception ex) {
+            assertThat(ex.getClass(), equalTo(UnitOfWorkException.class));
+            assertThat(ex.getCause().getMessage(), is("Something bad happened"));
+        }
+    }
+
+    @Test
+    public void many_threads_torture_scenario() throws Exception {
         ExecutorService executor = Executors.newFixedThreadPool(50);
         for (int i = 0; i < 1000; ++i) {
             int id = i;
-            executor.submit(() -> txManager.tx(() -> {
+            executor.submit(() -> txManager.txWrapped(() -> {
                     jooq().insertInto(PERSONS).set(ID, id).execute();
                     if (id % 2 == 1) {
                         throw new RuntimeException("Odd have no luck...");
@@ -131,12 +210,13 @@ public class ULTMTest {
                 }));
         }
         executor.shutdown();
-        executor.awaitTermination(3, SECONDS);
-        txManager.tx(() -> assertThat(jooq().selectCount().from(PERSONS).fetchOne().value1(), is(500)));
+        executor.awaitTermination(15, SECONDS); //usually few hundred ms should do
+
+        assertThat(txManager.txResult(() -> jooq().selectCount().from(PERSONS).fetchOne().value1()), is(500));
     }
 
     @Test
-    public void should_allow_noop() {
+    public void should_allow_noop() throws Exception {
         txManager.begin();
         // noop
         txManager.commit();
@@ -144,6 +224,8 @@ public class ULTMTest {
         txManager.begin();
         // noop
         txManager.rollback();
+
+        txManager.tx(() -> {/* noop */});
     }
 
     @Test(expected = IllegalStateException.class)
