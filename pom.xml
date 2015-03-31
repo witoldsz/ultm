@@ -51,12 +51,6 @@
       <version>1.4.186</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.jooq</groupId>
-      <artifactId>jooq</artifactId>
-      <version>3.5.3</version>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <distributionManagement>

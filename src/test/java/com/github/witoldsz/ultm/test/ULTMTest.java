@@ -4,20 +4,15 @@ import com.github.witoldsz.ultm.TxManager;
 import com.github.witoldsz.ultm.ULTM;
 import com.github.witoldsz.ultm.UnitOfWorkException;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import javax.sql.DataSource;
 import org.h2.jdbcx.JdbcDataSource;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import org.jooq.DSLContext;
-import org.jooq.Field;
-import org.jooq.Record;
-import static org.jooq.SQLDialect.H2;
-import org.jooq.Table;
-import org.jooq.impl.DSL;
 import org.junit.After;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -29,14 +24,9 @@ import org.junit.Before;
  */
 public class ULTMTest {
 
-    private final Table<Record> PERSONS = DSL.tableByName("PERSONS");
-    private final Field<Integer> ID = DSL.fieldByName(Integer.class, "PERSONS", "ID");
-    private final Field<String> NAME = DSL.fieldByName(String.class, "PERSONS", "NAME");
-    private final Random random = new Random();
-
     private TxManager txManager;
     private JdbcDataSource h2DataSource;
-    private DSLContext jooq;
+    private DataSource managedDataSource;
 
     @Before
     public void setup() throws SQLException {
@@ -48,7 +38,7 @@ public class ULTMTest {
         }
         ULTM ultm = new ULTM(h2DataSource);
         txManager = ultm.getTxManager();
-        jooq = DSL.using(ultm.getManagedDataSource(), H2);
+        managedDataSource = ultm.getManagedDataSource();
     }
 
     @After
@@ -58,16 +48,23 @@ public class ULTMTest {
         }
     }
 
-    private int insertPerson() {
-        return jooq.insertInto(PERSONS).set(ID, random.nextInt()).set(NAME, "Mr ULTM").execute();
+    private int insertPerson() throws SQLException {
+        try (Connection conn = managedDataSource.getConnection()) {
+            return conn.createStatement().executeUpdate("insert into PERSONS (ID, NAME) values (1, 'Mr Foo');");
+        }
     }
 
-    private Integer personsCount() {
-        return jooq.selectCount().from(PERSONS).fetchOne(DSL.count());
+    private Integer personsCount() throws SQLException {
+        try (Connection conn = managedDataSource.getConnection()) {
+            try (ResultSet r = conn.createStatement().executeQuery("select count(*) from PERSONS;")) {
+                r.first();
+                return r.getInt(1);
+            }
+        }
     }
 
     @Test
-    public void should_begin_and_commit() {
+    public void should_begin_and_commit() throws SQLException {
         txManager.begin();
         insertPerson();
         assertThat(personsCount(), is(1));
@@ -79,7 +76,7 @@ public class ULTMTest {
     }
 
     @Test
-    public void should_begin_and_rollback() {
+    public void should_begin_and_rollback() throws SQLException {
         txManager.begin();
         insertPerson();
         assertThat(personsCount(), is(1));
@@ -246,7 +243,7 @@ public class ULTMTest {
     }
 
     @Test(expected = IllegalStateException.class)
-    public void should_throw_when_acting_without_transaction() {
+    public void should_throw_when_acting_without_transaction() throws SQLException {
         try {
             insertPerson();
         } catch (IllegalStateException ex) {
