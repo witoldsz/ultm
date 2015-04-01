@@ -10,7 +10,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import javax.sql.DataSource;
-import org.h2.jdbcx.JdbcDataSource;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import org.junit.After;
@@ -24,28 +23,21 @@ import org.junit.Before;
  */
 public class ULTMTest {
 
+    private final H2DemoDatabase h2DemoDatabase = new H2DemoDatabase();
     private TxManager txManager;
-    private JdbcDataSource h2DataSource;
     private DataSource managedDataSource;
 
     @Before
     public void setup() throws SQLException {
-        h2DataSource = new JdbcDataSource();
-        h2DataSource.setURL("jdbc:h2:mem:db1;DB_CLOSE_DELAY=-1");
-
-        try (Connection conn = h2DataSource.getConnection()) {
-            conn.createStatement().execute("create table PERSONS (ID int, NAME varchar);");
-        }
-        ULTM ultm = new ULTM(h2DataSource);
+        h2DemoDatabase.setup();
+        ULTM ultm = new ULTM(h2DemoDatabase.getDataSource());
         txManager = ultm.getTxManager();
         managedDataSource = ultm.getManagedDataSource();
     }
 
     @After
     public void tearDown() throws SQLException {
-        try (Connection conn = h2DataSource.getConnection()) {
-            conn.createStatement().execute("SHUTDOWN");
-        }
+        h2DemoDatabase.tearDown();
     }
 
     private int insertPerson() throws SQLException {

@@ -76,8 +76,8 @@ txManager.txChecked(() -> do_something());
 ```
 
 
-Tests are always good source of knowledge, so check them out:
-https://github.com/witoldsz/ultm/blob/master/src/test/java/com/github/witoldsz/ultm/test/ULTMTest.java
+Tests (featuring examples) are always good source of knowledge, so check them out:
+https://github.com/witoldsz/ultm/blob/master/src/test/java/com/github/witoldsz/ultm/test
 
 You are welcome
 ---
