@@ -64,18 +64,18 @@ public class JooqExampleTest {
     }
 
     /**
-     * This test is using "wrapped" flavors of UnitOfWork transaction executors,
-     * so there is no need to declare or catch unchecked exceptions.
+     * This test is using transaction executors declaring no checked exceptions,
+     * so there is no need to declare or catch them.
      */
     @Test
     public void jooq_example_with_unit_of_work() {
-        txManager.txWrapped(() -> {
+        txManager.tx(() -> {
             jooq.insertInto(PERSONS).set(ID, random.nextInt()).set(NAME, "Mr jOOQ").execute();
             assertThat(personsCount(), is(1));
         });
 
         try {
-            txManager.txWrapped(() -> {
+            txManager.tx(() -> {
                 jooq.delete(PERSONS).execute();
                 assertThat(personsCount(), is(0));
                 throw new RuntimeException("I am bad exception");
@@ -84,7 +84,7 @@ public class JooqExampleTest {
             assertThat(e.getMessage(), is("I am bad exception"));
         }
 
-        int personsCount = txManager.txWrappedResult(this::personsCount);
+        int personsCount = txManager.txResult(this::personsCount);
         assertThat(personsCount, is(1));
     }
 

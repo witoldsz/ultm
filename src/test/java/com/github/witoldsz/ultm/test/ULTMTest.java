@@ -80,13 +80,13 @@ public class ULTMTest {
     }
 
     @Test
-    public void should_wrap_tx_within_UnitOfWork() throws Exception {
+    public void should_wrap_tx_within_UnitOfWork() {
         txManager.tx(this::insertPerson);
         assertThat(txManager.txResult(this::personsCount), is(1));
     }
 
     @Test
-    public void should_rollback_tx_within_UnitOfWork() throws Exception {
+    public void should_rollback_tx_within_UnitOfWork() {
         try {
             txManager.tx(() -> {
                 insertPerson();
@@ -100,14 +100,14 @@ public class ULTMTest {
     }
 
     @Test
-    public void should_wrap_tx_within_UnitOfWorkCall_with_result() throws Exception {
+    public void should_wrap_tx_within_UnitOfWorkCall_with_result() {
         Integer result = txManager.txResult(this::insertPerson);
         assertThat(txManager.txResult(this::personsCount), is(1));
         assertThat(result, is(1));
     }
 
     @Test
-    public void should_rollback_tx_within_UnitOfWorkCall_with_result() throws Exception {
+    public void should_rollback_tx_within_UnitOfWorkCall_with_result() {
         try {
             Object ignore = txManager.txResult(() -> {
                 insertPerson();
@@ -121,9 +121,9 @@ public class ULTMTest {
     }
 
     @Test
-    public void should_propagate_every_exceptions_as_is_from_UnitOfWork() {
+    public void should_propagate_every_exceptions_unwrapped_from_UnitOfWork() {
         try {
-            txManager.tx(() -> {
+            txManager.txUnwrapped(() -> {
                 throw new Exception("Something bad happened");
             });
             fail("This test should not get here.");
@@ -136,7 +136,7 @@ public class ULTMTest {
     @Test
     public void should_propagate_every_exceptions_as_is_from_UnitOfWorkCall() {
         try {
-            txManager.txResult(() -> {
+            txManager.txUnwrappedResult(() -> {
                 throw new Exception("Something bad happened");
             });
             fail("This test should not get here.");
@@ -149,7 +149,7 @@ public class ULTMTest {
     @Test
     public void should_wrap_checked_exceptions_from_UnitOfWork() {
         try {
-            txManager.txWrapped(() -> {
+            txManager.tx(() -> {
                 throw new Exception("Something bad happened");
             });
             fail("This test should not get here.");
@@ -162,7 +162,7 @@ public class ULTMTest {
     @Test
     public void should_wrap_checked_exceptions_from_UnitOfWorkCall() {
         try {
-            txManager.txWrappedResult(() -> {
+            txManager.txResult(() -> {
                 throw new Exception("Something bad happened");
             });
             fail("This test should not get here.");
@@ -173,11 +173,11 @@ public class ULTMTest {
     }
 
     @Test
-    public void many_threads_torture_scenario() throws Exception {
+    public void many_threads_torture_scenario() throws InterruptedException {
         ExecutorService executor = Executors.newFixedThreadPool(50);
         for (int i = 0; i < 1000; ++i) {
             int id = i;
-            executor.submit(() -> txManager.txWrapped(() -> {
+            executor.submit(() -> txManager.tx(() -> {
                     insertPerson();
                     if (id % 2 == 1) {
                         throw new RuntimeException("Odd have no luck...");
@@ -191,7 +191,7 @@ public class ULTMTest {
     }
 
     @Test
-    public void should_allow_noop() throws Exception {
+    public void should_allow_noop() {
         txManager.begin();
         // noop
         txManager.commit();

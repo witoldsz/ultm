@@ -43,7 +43,7 @@ public class ThreadLocalTxManager implements TxManager, ConnectionProvider {
     }
 
     @Override
-    public <T> T txResult(UnitOfWorkCall<T> unit) throws Exception {
+    public <T> T txUnwrappedResult(UnitOfWorkCall<T> unit) throws Exception {
         begin();
         try {
             T result = unit.call();
@@ -56,9 +56,9 @@ public class ThreadLocalTxManager implements TxManager, ConnectionProvider {
     }
 
     @Override
-    public <T> T txWrappedResult(UnitOfWorkCall<T> unit) {
+    public <T> T txResult(UnitOfWorkCall<T> unit) {
         try {
-            return txResult(unit);
+            return txUnwrappedResult(unit);
         } catch (RuntimeException ex) {
             throw ex;
         } catch (Exception ex) {
@@ -67,12 +67,12 @@ public class ThreadLocalTxManager implements TxManager, ConnectionProvider {
     }
 
     @Override
-    public void tx(UnitOfWork unit) throws Exception {
-        txResult(() -> { unit.run(); return null;});
+    public void txUnwrapped(UnitOfWork unit) throws Exception {
+        txUnwrappedResult(() -> { unit.run(); return null;});
     }
 
-    public void txWrapped(UnitOfWork unit) {
-        txWrappedResult(() -> {unit.run(); return null;});
+    public void tx(UnitOfWork unit) {
+        txResult(() -> {unit.run(); return null;});
     }
 
     @Override

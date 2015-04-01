@@ -71,8 +71,6 @@ Same as above, but using *Unit of Work* pattern:
 
 ```java
 txManager.tx(() -> do_something());
-// or when do_something() throws checked exceptions
-txManager.txChecked(() -> do_something());
 ```
 
 

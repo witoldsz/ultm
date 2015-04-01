@@ -7,7 +7,8 @@ package com.github.witoldsz.ultm;
 public interface TxManager {
 
     /**
-     * Wraps unit within transaction with result. It works like this:
+     * Wraps unit within transaction with result. It DOES NOT wrap checked exceptions, just throws them "as is".
+     * Basically, it does this:
      * <pre>
      *  begin();
      *  try {
@@ -29,43 +30,53 @@ public interface TxManager {
      * @see UnitOfWork
      * @see UnitOfWorkCall
      */
-    <T> T txResult(UnitOfWorkCall<T> unit) throws Exception;
+    <T> T txUnwrappedResult(UnitOfWorkCall<T> unit) throws Exception;
 
     /**
-     * It does same thing as {@link #txResult(UnitOfWorkCall)} but the checked exceptions get wrapped
-     * in {@link UnitOfWorkException}.
+     * It does same thing as {@link #txUnwrappedResult(UnitOfWorkCall)} but the checked exceptions get wrapped
+     * in {@link UnitOfWorkException}, so there is no need to declare or catch unchecked exceptions.
+     * Basically, it does this:
+     * <pre>
+     *  try {
+     *      return txUnwrappedResult(unit);
+     *  } catch (RuntimeException ex) {
+     *      throw ex;
+     *  } catch (Exception ex) {
+     *      throw new UnitOfWorkException(ex);
+     *  }
+     * </pre>
      *
      * @param <T> type of result
      * @param unit unit-of-work
      * @return result of unit-of-work
-     * @throws UnitOfWorkException same as in {@link #txResult(UnitOfWorkCall)} and also a wrapped of any
+     * @throws UnitOfWorkException same as in {@link #txUnwrappedResult(UnitOfWorkCall)} and also a wrapped of any
      * checked exception thrown within unit-of-work
-     * @see #txResult(UnitOfWorkCall)
+     * @see #txUnwrappedResult(UnitOfWorkCall)
      * @see UnitOfWork
      * @see UnitOfWorkCall
      */
-    <T> T txWrappedResult(UnitOfWorkCall<T> unit);
+    <T> T txResult(UnitOfWorkCall<T> unit);
+
+    /**
+     * It does same thing as {@link #txUnwrappedResult(UnitOfWorkCall)} but does not return any result.
+     *
+     * @param unit unit-of-work
+     * @throws UnitOfWorkException
+     * @throws Exception
+     * @see #txUnwrappedResult(UnitOfWorkCall)
+     */
+    void txUnwrapped(UnitOfWork unit) throws Exception;
+
 
     /**
      * It does same thing as {@link #txResult(UnitOfWorkCall)} but does not return any result.
      *
      * @param unit unit-of-work
      * @throws UnitOfWorkException
-     * @throws Exception
+     * @see #txUnwrappedResult(UnitOfWorkCall)
      * @see #txResult(UnitOfWorkCall)
      */
-    void tx(UnitOfWork unit) throws Exception;
-
-
-    /**
-     * It does same thing as {@link #txWrappedResult(UnitOfWorkCall)} but does not return any result.
-     *
-     * @param unit unit-of-work
-     * @throws UnitOfWorkException
-     * @see #txResult(UnitOfWorkCall)
-     * @see #txWrappedResult(UnitOfWorkCall)
-     */
-    void txWrapped(UnitOfWork unit);
+    void tx(UnitOfWork unit);
 
     /**
      * Begins a transaction.
