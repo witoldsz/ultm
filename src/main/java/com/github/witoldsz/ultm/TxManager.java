@@ -25,7 +25,11 @@ public interface TxManager {
      * @param unit unit-of-work
      * @return result of unit-of-work
      * @throws UnitOfWorkException wraps SQLException from one of
-     * <ul> <li>{@link #begin()}, <li>{@link #commit()} or <li>{@link #rollback()}
+     * <ul>
+     *   <li>{@link #begin()},
+     *   <li>{@link #commit()} or
+     *   <li>{@link #rollback()}
+     * </ul>
      * @throws Exception it can be any exception propagated from within unit-of-work
      * @see UnitOfWork
      * @see UnitOfWorkCall
@@ -61,8 +65,8 @@ public interface TxManager {
      * It does same thing as {@link #txUnwrappedResult(UnitOfWorkCall)} but does not return any result.
      *
      * @param unit unit-of-work
-     * @throws UnitOfWorkException
-     * @throws Exception
+     * @throws UnitOfWorkException same as in the equivalent with result
+     * @throws Exception same as in the equivalent with result
      * @see #txUnwrappedResult(UnitOfWorkCall)
      */
     void txUnwrapped(UnitOfWork unit) throws Exception;
@@ -72,7 +76,7 @@ public interface TxManager {
      * It does same thing as {@link #txResult(UnitOfWorkCall)} but does not return any result.
      *
      * @param unit unit-of-work
-     * @throws UnitOfWorkException
+     * @throws UnitOfWorkException same as in the equivalent with result
      * @see #txUnwrappedResult(UnitOfWorkCall)
      * @see #txResult(UnitOfWorkCall)
      */
