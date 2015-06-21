@@ -21,10 +21,16 @@ public class ThreadLocalTxManager implements TxManager, ConnectionProvider {
     private final ThreadLocal<WrappedConnection> connections = new ThreadLocal<>();
     private final DataSource rawDataSource;
     private final Consumer<Connection> connectionTuner;
+    private Optional<Runnable> afterRollbackListener;
 
     public ThreadLocalTxManager(DataSource rawDataSource, Consumer<Connection> connectionTuner) {
         this.rawDataSource = rawDataSource;
         this.connectionTuner = connectionTuner;
+    }
+
+    @Override
+    public void setAfterRollbackListener(Runnable listener) {
+        this.afterRollbackListener = Optional.ofNullable(listener);
     }
 
     @Override
@@ -101,6 +107,8 @@ public class ThreadLocalTxManager implements TxManager, ConnectionProvider {
                 delegated.close();
             } catch (SQLException ex) {
                 throw new UnitOfWorkException(ex);
+            } finally {
+                afterRollbackListener.ifPresent(Runnable::run);
             }
         });
     }

@@ -71,7 +71,6 @@ public interface TxManager {
      */
     void txUnwrapped(UnitOfWork unit) throws Exception;
 
-
     /**
      * It does same thing as {@link #txResult(UnitOfWorkCall)} but does not return any result.
      *
@@ -81,6 +80,8 @@ public interface TxManager {
      * @see #txResult(UnitOfWorkCall)
      */
     void tx(UnitOfWork unit);
+
+    void setAfterRollbackListener(Runnable listener);
 
     /**
      * Begins a transaction.
