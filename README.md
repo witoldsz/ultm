@@ -73,6 +73,18 @@ Same as above, but using *Unit of Work* pattern:
 txManager.tx(() -> do_something());
 ```
 
+Rollback listener:
+------------------
+
+Sometimes it's important to do something after rollback, e.g. to keep your model in sync with database.
+Since failed transaction has ended, you can access rolled back database and act accordingly.
+
+```java
+txManager.setAfterRollbackListener(() -> { ... });
+```
+
+Tests and examples:
+-------------------
 
 Tests (featuring examples) are always good source of knowledge, so check them out:
 https://github.com/witoldsz/ultm/blob/master/src/test/java/com/github/witoldsz/ultm/test
