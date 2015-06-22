@@ -21,7 +21,7 @@ public class ThreadLocalTxManager implements TxManager, ConnectionProvider {
     private final ThreadLocal<WrappedConnection> connections = new ThreadLocal<>();
     private final DataSource rawDataSource;
     private final Consumer<Connection> connectionTuner;
-    private Optional<Runnable> afterRollbackListener;
+    private Optional<Runnable> afterRollbackListener = Optional.empty();
 
     public ThreadLocalTxManager(DataSource rawDataSource, Consumer<Connection> connectionTuner) {
         this.rawDataSource = rawDataSource;
