@@ -6,11 +6,14 @@ import com.github.witoldsz.ultm.UnitOfWorkException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import javax.sql.DataSource;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import org.junit.After;
 import org.junit.Test;
@@ -170,6 +173,25 @@ public class ULTMTest {
             assertThat(ex.getClass(), equalTo(UnitOfWorkException.class));
             assertThat(ex.getCause().getMessage(), is("Something bad happened"));
         }
+    }
+
+    @Test
+    public void should_execute_afterRollbackListener_in_new_transaction() {
+
+        // setup
+        List<Integer> personCount = new ArrayList<>();
+        txManager.setAfterRollbackListener(() -> personCount.add(txManager.txResult(this::personsCount)));
+
+        // let's play
+        try {
+            txManager.tx(() -> {
+                insertPerson();
+                throw new RuntimeException("Something bad happened");
+            });
+            fail("this test should not get here");
+        } catch (RuntimeException ex) {/* ignore */}
+
+        assertThat(personCount, hasItem(0));
     }
 
     @Test
