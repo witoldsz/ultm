@@ -7,13 +7,13 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import static java.util.Arrays.asList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import javax.sql.DataSource;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import org.junit.After;
 import org.junit.Test;
@@ -188,10 +188,9 @@ public class ULTMTest {
                 insertPerson();
                 throw new RuntimeException("Something bad happened");
             });
-            fail("this test should not get here");
         } catch (RuntimeException ex) {/* ignore */}
 
-        assertThat(personCount, hasItem(0));
+        assertThat(personCount, equalTo(asList(0)));
     }
 
     @Test
