@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/witoldsz/ultm.svg?branch=master)](https://travis-ci.org/witoldsz/ultm)
+
 ULTM
 ===
 **Ultra Lightweight** Transaction Manager for JDBC
