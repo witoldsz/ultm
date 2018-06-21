@@ -51,13 +51,16 @@ public class ThreadLocalTxManager implements TxManager, ConnectionProvider {
     @Override
     public <T> T txUnwrappedResult(UnitOfWorkCall<T> unit) throws Exception {
         begin();
+        boolean rollback = true;
         try {
             T result = unit.call();
+            rollback = false;
             commit();
             return result;
-        } catch (Exception e) {
-            rollback();
-            throw e;
+        } finally {
+            if (rollback) {
+                rollback();
+            }
         }
     }
 
